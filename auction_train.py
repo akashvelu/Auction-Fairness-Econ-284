@@ -5,7 +5,7 @@ from auction import Auction
 
 
 class PolicyNetwork(torch.nn.Module):
-    def __init__(self, in_features, reserve_price, hidden_size=32, init_std=1.0):
+    def __init__(self, in_features, reserve_price, hidden_size=32, init_std=0.05):
         super(PolicyNetwork, self).__init__()
         self.fc1 = torch.nn.Linear(in_features, out_features=hidden_size)
         self.fc2 = torch.nn.Linear(in_features=hidden_size, out_features=1, bias=False)
@@ -71,7 +71,8 @@ class Trainer:
             print("loss at iteration " + str(i) + ": " + str(loss))
             _, bids, _, rewards, dones = self.rollout_auction(use_greedy=True)
             team_returns = rewards.sum(0).flatten()
-            print("Eval team returns: ", team_returns)
+            print("Eval team bids: ", bids[:, :, 0].T)
+            print("eval team returns: ", )
             print("")
 
     def train_step(self):
@@ -85,13 +86,13 @@ class Trainer:
         rewards_to_go = self.get_rewards_to_go(rewards_batch, dones_batch[:, 1:])
         rewards_to_go = torch.from_numpy(rewards_to_go)
 
-        loss = (-1 * rewards_to_go * logprobs_batch * torch.from_numpy(dones_batch[:, :-1])).mean()
+        loss = (-1 * rewards_to_go * logprobs_batch * torch.from_numpy(1 - dones_batch[:, :-1])).mean()
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
         return loss
 
-    def get_rewards_to_go(self, rewards, dones, normalize=True):
+    def get_rewards_to_go(self, rewards, dones, normalize=False):
         # shape is BS, H, 1
         rewards_to_go = np.zeros_like(rewards)
         BS, H, _ = rewards_to_go.shape
@@ -119,12 +120,12 @@ def collapse_horizon(arr):
 
 if __name__ == '__main__':
 
-    auction = Auction(n_teams=2, n_players=4, player_values=[4, 3, 2, 1], players_per_team=2, reserve_price=0)
+    auction = Auction(n_teams=2, n_players=2, player_values=[2, 1], players_per_team=1, reserve_price=0)
     policy = PolicyNetwork(auction.state_dim, auction.reserve_price)
 
 
     # states, bids, rewards, dones = rollout_auction(policy, auction)
-    trainer = Trainer(auction, policy, 3e-3, 1000, 100)
+    trainer = Trainer(auction, policy, 3e-3, 1000, 1)
     trainer.train()
     a = 2
 
