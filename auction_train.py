@@ -5,7 +5,7 @@ from auction import Auction
 
 
 class PolicyNetwork(torch.nn.Module):
-    def __init__(self, in_features, reserve_price, hidden_size=32, init_std=0.05):
+    def __init__(self, in_features, reserve_price, hidden_size=32, init_std=0.5):
         super(PolicyNetwork, self).__init__()
         self.fc1 = torch.nn.Linear(in_features, out_features=hidden_size)
         self.fc2 = torch.nn.Linear(in_features=hidden_size, out_features=1, bias=False)
@@ -119,13 +119,13 @@ def collapse_horizon(arr):
 
 
 if __name__ == '__main__':
-
-    auction = Auction(n_teams=2, n_players=8, player_values=[8, 7, 6, 5, 4, 3, 2, 1], players_per_team=4, reserve_price=0)
+    player_values = [[4, 3], [2.5, 2]]
+    auction = Auction(n_teams=2, n_players=2, player_team_values=player_values, players_per_team=1, reserve_price=0)
     policy = PolicyNetwork(auction.state_dim, auction.reserve_price)
 
 
     # states, bids, rewards, dones = rollout_auction(policy, auction)
-    trainer = Trainer(auction, policy, 3e-3, 1000, 500)
+    trainer = Trainer(auction, policy, 5e-4, 1000, 500)
     trainer.train()
     a = 2
 
